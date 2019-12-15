@@ -1,5 +1,7 @@
+# What is Flogo
+Learn more about [**Project Flogo**](https://www.flogo.io/) and [**TIBCO Flogo Enterprise**](https://www.tibco.com/products/tibco-flogo)
 # run-flogo-app
-This program will run the latest TIBCO Flogo Enterprise app in the directory specified by you
+This program will execute the latest TIBCO Flogo Enterprise app in the directory specified by you
 
 ### How to Download
 You can download the release from here https://github.com/abhijitWakchaure/run-flogo-app/releases/latest
