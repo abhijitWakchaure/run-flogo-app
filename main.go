@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -70,11 +71,20 @@ func RunFlogoApp(app string, args []string) {
 func main() {
 	app := FindLatestApp()
 	if len(app) > 0 {
-		fmt.Println(app)
-		if runtime.GOOS == "windows" {
-			// TODO: Handle for Windows
+		fmt.Print("#> Do you want to execute \"", app, "\" [Y/n]: ")
+		reader := bufio.NewReader(os.Stdin)
+		char, _, err := reader.ReadRune()
+		if err != nil {
+			log.Fatalln("# Error:", err)
 		}
-		MakeAppExecutable(app)
-		RunFlogoApp(app, os.Args)
+		if char == 'Y' || char == 'y' {
+			if runtime.GOOS == "windows" {
+				// TODO: Handle for Windows
+			}
+			MakeAppExecutable(app)
+			RunFlogoApp(app, os.Args)
+		} else {
+			log.Println("# Info: Exiting...")
+		}
 	}
 }
