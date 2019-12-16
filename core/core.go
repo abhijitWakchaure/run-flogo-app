@@ -27,7 +27,7 @@ const (
 	GithubLastestReleaseURL  = "https://api.github.com/repos/abhijitWakchaure/run-flogo-app/releases/latest"
 	GithubDownloadBaseURL    = "https://github.com/abhijitWakchaure/run-flogo-app/releases/download/"
 	GithubBaseURL            = "https://github.com/abhijitWakchaure/run-flogo-app"
-	CurrentAppVersion        = "v1.1"
+	CurrentAppVersion        = "v1.3"
 	InstallPathLinux         = "/usr/local/bin/"
 	InstallPathDarwin        = "/usr/local/bin"
 	InstallPathWindows       = "/usr/local/bin"
@@ -169,14 +169,23 @@ func (a *App) Install() {
 
 // Uninstall will install the program
 func (a *App) Uninstall() {
-	fmt.Print("#> Uninstalling run-flogo-app...")
-	target := path.Join(a._InstallPath, AppName)
-	err := utils.Remove(target)
+	fmt.Println("#> Uninstalling run-flogo-app...")
+	fmt.Print("...Deleting config file...")
+	err := os.Remove(ConfigFile)
 	if err != nil {
 		fmt.Println("failed")
+		log.Println("# Error: ERR_UNINSTALL_CLRCONFIG", err)
+	}
+	fmt.Print("...Deleting main executable...")
+	target := path.Join(a._InstallPath, AppName)
+	err = utils.Remove(target)
+	if err != nil {
+		fmt.Println("failed")
+		fmt.Println("#> Unable to uninstall run-flogo-app...you can manually delete", path.Join(a._InstallPath, AppName))
 		log.Fatalln("# Error: ERR_UNINSTALL_REMOVE", err)
 	}
-	fmt.Println("done")
+	fmt.Println()
+	fmt.Println("#> Finished uninstalling run-flogo-app")
 }
 
 // Version ...
