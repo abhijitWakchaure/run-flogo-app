@@ -19,8 +19,10 @@ import (
 
 // Constants for local env
 const (
-	DefaultAppPattern = `^.+-linux_amd64.*$`
-	ConfigFile        = ".run-flogo-app"
+	DefaultAppPatternLinux   = `^.+-linux_amd64.*$`
+	DefaultAppPatternWindows = `^.+-windows_amd64.*$`
+	DefaultAppPatternDarwin  = `^.+-darwin_amd64.*$`
+	ConfigFile               = "run-flogo-app-config.json"
 )
 
 // App holds the environmet variables for the user
@@ -72,7 +74,13 @@ func (a *App) WriteConfig() {
 func (a *App) loadDefaultConfig() {
 	fmt.Print("loading default config...")
 	a.AppDir = path.Join(GetUserHomeDir(), "Downloads")
-	a.AppPattern = DefaultAppPattern
+	if runtime.GOOS == "linux" {
+		a.AppPattern = DefaultAppPatternLinux
+	} else if runtime.GOOS == "windows" {
+		a.AppPattern = DefaultAppPatternWindows
+	} else if runtime.GOOS == "darwin" {
+		a.AppPattern = DefaultAppPatternDarwin
+	}
 }
 
 func (a *App) validateConfig() {
