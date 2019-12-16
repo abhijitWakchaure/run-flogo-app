@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/user"
@@ -23,6 +24,9 @@ const (
 	DefaultAppPatternWindows = `^.+-windows_amd64.*$`
 	DefaultAppPatternDarwin  = `^.+-darwin_amd64.*$`
 	ConfigFile               = "run-flogo-app-config.json"
+	GithubLastestReleaseURL  = "https://api.github.com/repos/abhijitWakchaure/run-flogo-app/releases/latest"
+	GithubDownloadBaseURL    = "https://github.com/abhijitWakchaure/run-flogo-app/releases/download/"
+	CurrentAppVersion        = "v1.3"
 )
 
 // App holds the environmet variables for the user
@@ -31,7 +35,15 @@ type App struct {
 	AppPattern string `json:"rfAppPattern"`
 }
 
+// NewApp ...
+func NewApp() *App {
+	app := new(App)
+	app.init()
+	return app
+}
+
 func (a *App) init() {
+	CheckForUpdates()
 	a.ReadConfig()
 	a.validateConfig()
 }
@@ -160,21 +172,50 @@ func RunFlogoApp(app string, debug *bool, tail []string) {
 	}
 }
 
+// CheckForUpdates will check for latest release
+func CheckForUpdates() {
+	fmt.Print("#> Checking for updates...")
+	resp, err := http.Get(GithubLastestReleaseURL)
+	if err != nil {
+		log.Println("Unable to check for updates...", err)
+	}
+	defer resp.Body.Close()
+	var gitdata map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&gitdata)
+	if err != nil {
+		fmt.Println()
+		log.Fatalln("# Error: ERR_CHKUPDATE_DECODE", err)
+	}
+	for _, d := range gitdata["assets"].([]interface{}) {
+		durl := d.(map[string]interface{})["browser_download_url"].(string)
+		if strings.Contains(durl, runtime.GOOS) && !strings.Contains(durl, CurrentAppVersion) {
+			fmt.Println("New version of the app is available at", durl)
+		} else if strings.Contains(durl, runtime.GOOS) {
+			fmt.Println("Your app is up to date")
+		}
+	}
+}
+
+// HandleYNInput handles the Yes/No input
+func HandleYNInput() rune {
+	reader := bufio.NewReader(os.Stdin)
+	char, _, err := reader.ReadRune()
+	if err != nil {
+		log.Fatalln("# Error: ERR_READ_USRIN", err)
+	}
+	return char
+}
+
 func main() {
-	app := App{}
-	app.init()
+	app := NewApp()
 	latestFlogoApp := app.FindLatestApp()
 	flagDebug := flag.Bool("debug", false, "Set this to enable debug logs")
 	flag.Parse()
 
 	if len(latestFlogoApp) > 0 {
 		fmt.Print("#> Do you want to execute this app \"", latestFlogoApp, "\" [Y/n]: ")
-		reader := bufio.NewReader(os.Stdin)
-		char, _, err := reader.ReadRune()
-		if err != nil {
-			log.Fatalln("# Error: ERR_READ_USRIN", err)
-		}
-		if char == 'Y' || char == 'y' {
+		choice := HandleYNInput()
+		if choice == 'Y' || choice == 'y' {
 			if runtime.GOOS == "windows" {
 				// TODO: Handle for Windows
 			}
