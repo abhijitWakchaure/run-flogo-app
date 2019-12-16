@@ -22,7 +22,7 @@ Also, you can pass command line arguments if your flogo app supports it; like th
 
 
 ### The config file
-When the program starts it creates a config file with name `.run-flogo-app` in the same directory. It is a simple json file which looks like this:
+When the program starts it creates a config file with name `run-flogo-app-config.json` in the same directory. It is a simple json file which looks like this:
 ```
 {
 	"rfAppDir": "/home/abhijit/Downloads",
