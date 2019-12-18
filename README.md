@@ -20,6 +20,19 @@ Also, you can pass command line arguments if your flogo app supports it; like th
 ./run-flogo-app -debug arg1 arg2 arg3
 ```
 
+### Flags
+You can provide the following flags to the main program like this 
+```
+./run-flogo-app -flag1 -flag2 -flag3
+```
+
+| Flag          | Use                                                   |
+| :------------ |:----------------------------------------------------  |
+| -debug         | To enable debug logs for your flogo app              |
+| -install       | To install **run-flogo-app** (the main program)      |
+| -uninstall     | To uninstall run-flogo-app and to remove the config  |
+| -version       | To print the version info                            |
+
 
 ### The config file
 When the program starts it creates a config file with name `run-flogo-app-config.json` in the same directory. It is a simple json file which looks like this:
