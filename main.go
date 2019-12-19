@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"runtime"
 	"strings"
 
 	"github.com/abhijitWakchaure/run-flogo-app/core"
@@ -57,9 +56,6 @@ func main() {
 			fmt.Print("#> Do you want to execute this app \"", latestFlogoApp, "\" [Y/n]: ")
 			choice := utils.HandleYNInput()
 			if choice == 'Y' || choice == 'y' {
-				if runtime.GOOS == "windows" {
-					// TODO: Handle for Windows
-				}
 				utils.MakeAppExecutable(latestFlogoApp)
 				RunFlogoApp(latestFlogoApp, flagDebug, flag.Args())
 			} else {

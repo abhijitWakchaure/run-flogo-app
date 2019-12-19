@@ -16,9 +16,10 @@ func Copy(src, dst string) error {
 	if runtime.GOOS == "linux" {
 		cmd = exec.Command("sudo", "cp", "-fpv", src, dst)
 	} else if runtime.GOOS == "windows" {
-		// TODO
+		cmd = exec.Command("cmd.exe", "/C", `copy /Y `+src+" "+dst)
+		fmt.Println(cmd.Args)
 	} else if runtime.GOOS == "darwin" {
-		// TODO
+		cmd = exec.Command("sudo", "cp", "-fpv", src, dst)
 	}
 	return cmd.Run()
 }
@@ -29,9 +30,9 @@ func Remove(target string) error {
 	if runtime.GOOS == "linux" {
 		cmd = exec.Command("sudo", "rm", target)
 	} else if runtime.GOOS == "windows" {
-		// TODO
+		cmd = exec.Command("cmd.exe", "/C", `del `+target)
 	} else if runtime.GOOS == "darwin" {
-		// TODO
+		cmd = exec.Command("sudo", "rm", target)
 	}
 	return cmd.Run()
 }

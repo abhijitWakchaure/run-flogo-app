@@ -27,10 +27,10 @@ const (
 	GithubLastestReleaseURL  = "https://api.github.com/repos/abhijitWakchaure/run-flogo-app/releases/latest"
 	GithubDownloadBaseURL    = "https://github.com/abhijitWakchaure/run-flogo-app/releases/download/"
 	GithubBaseURL            = "https://github.com/abhijitWakchaure/run-flogo-app"
-	CurrentAppVersion        = "v1.3"
-	InstallPathLinux         = "/usr/local/bin/"
+	CurrentAppVersion        = "v1.4"
+	InstallPathLinux         = "/usr/local/bin"
 	InstallPathDarwin        = "/usr/local/bin"
-	InstallPathWindows       = "/usr/local/bin"
+	InstallPathWindows       = `C:\Windows\system32`
 )
 
 // App holds the environmet variables for the user
@@ -156,8 +156,15 @@ func (a *App) Install() {
 		fmt.Println("failed")
 		log.Fatalln("# Error: ERR_INSTALL_SELFPATH", err)
 	}
-	src := path.Join(filepath.Dir(ex), a._TempAppName)
-	dst := path.Join(a._InstallPath, AppName)
+	var src string
+	var dst string
+	if runtime.GOOS == "windows" {
+		src = filepath.Dir(ex) + a._TempAppName
+		dst = a._InstallPath + string(os.PathSeparator) + AppName + ".exe"
+	} else {
+		src = path.Join(filepath.Dir(ex), a._TempAppName)
+		dst = path.Join(a._InstallPath, AppName)
+	}
 	err = utils.Copy(src, dst)
 	if err != nil {
 		fmt.Println("failed")
@@ -177,7 +184,12 @@ func (a *App) Uninstall() {
 		log.Println("# Error: ERR_UNINSTALL_CLRCONFIG", err)
 	}
 	fmt.Print("...Deleting main executable...")
-	target := path.Join(a._InstallPath, AppName)
+	var target string
+	if runtime.GOOS == "windows" {
+		target = a._InstallPath + string(os.PathSeparator) + AppName + ".exe"
+	} else {
+		target = path.Join(a._InstallPath, AppName)
+	}
 	err = utils.Remove(target)
 	if err != nil {
 		fmt.Println("failed")
