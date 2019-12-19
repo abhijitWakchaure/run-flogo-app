@@ -32,6 +32,7 @@ You can provide the following flags to the main program like this
 | -install       | To install **run-flogo-app** (the main program)      |
 | -uninstall     | To uninstall run-flogo-app and to remove the config  |
 | -version       | To print the version info                            |
+| -help          | To print the availabel flags                         |
 
 
 ### The config file
