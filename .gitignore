@@ -3,6 +3,7 @@
 # App Specific
 .run-flogo-app
 # compiled output
+/dist
 
 # dependencies
 /node_modules
