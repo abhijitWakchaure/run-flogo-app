@@ -13,7 +13,7 @@ chmod +x ~/Downloads/run-flogo-app-linux-amd64
 ``` 
 Then install the program with `-install` flag
 ```
-./run-flogo-app-linux-amd64 -install
+~/Downloads/run-flogo-app-linux-amd64 -install
 ```
 
 ### How to Use
