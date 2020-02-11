@@ -1,3 +1,8 @@
+// Copyright (c) 2019 abhijit wakchaure. All rights reserved.
+// Use of this source code is governed by a MIT-style license
+// that can be found in the LICENSE file.
+
+// Package core implements methods that are essential to core operations of the app.
 package core
 
 import (
@@ -23,11 +28,12 @@ const (
 	DefaultAppPatternLinux   = `^.+-linux_amd64.*$`
 	DefaultAppPatternWindows = `^.+-windows_amd64.*$`
 	DefaultAppPatternDarwin  = `^.+-darwin_amd64.*$`
-	ConfigFile               = "run-flogo-app-config.json"
+	ConfigFile               = "run-flogo-app.config"
 	GithubLastestReleaseURL  = "https://api.github.com/repos/abhijitWakchaure/run-flogo-app/releases/latest"
 	GithubDownloadBaseURL    = "https://github.com/abhijitWakchaure/run-flogo-app/releases/download/"
 	GithubBaseURL            = "https://github.com/abhijitWakchaure/run-flogo-app"
-	CurrentAppVersion        = "v1.4"
+	GithubIssuesURL          = "https://github.com/abhijitWakchaure/run-flogo-app/issues"
+	CurrentAppVersion        = "v1.5"
 	InstallPathLinux         = "/usr/local/bin"
 	InstallPathDarwin        = "/usr/local/bin"
 	InstallPathWindows       = `C:\Windows\system32`
@@ -35,10 +41,14 @@ const (
 
 // App holds the environmet variables for the user
 type App struct {
-	_TempAppName string
-	_InstallPath string
-	AppDir       string `json:"rfAppDir" binding:"required"`
-	AppPattern   string `json:"rfAppPattern"`
+	_TempAppName      string
+	_InstallPath      string
+	_AppConfigPath    string
+	AppDir            string `json:"appsDir" binding:"required"`
+	AppPattern        string `json:"appPattern"`
+	IsUpdateAvailable bool   `json:"isUpdateAvailable"`
+	UpdateURL         string `json:"updateURL"`
+	ReleaseNotes      string `json:"releaseNotes"`
 }
 
 // Init ...
@@ -56,11 +66,12 @@ func (a *App) Init() {
 		a.AppPattern = DefaultAppPatternDarwin
 		a._InstallPath = InstallPathDarwin
 	}
+	a._AppConfigPath = path.Join(utils.GetUserHomeDir(), ConfigFile)
 }
 
 // ReadConfig will read the config from configuration file
 func (a *App) ReadConfig() {
-	fileExists, err := utils.CheckFileExists(ConfigFile)
+	fileExists, err := utils.CheckFileExists(a._AppConfigPath)
 	if err != nil {
 		log.Fatalln("# Error: ERR_READ_CONFIG", err)
 	}
@@ -69,7 +80,7 @@ func (a *App) ReadConfig() {
 		a.WriteConfig()
 		return
 	}
-	f, err := ioutil.ReadFile(ConfigFile)
+	f, err := ioutil.ReadFile(a._AppConfigPath)
 	if err != nil {
 		fmt.Println("#> Unable to read config...ignoring config...using defaults")
 		a.loadDefaultConfig()
@@ -84,18 +95,21 @@ func (a *App) ReadConfig() {
 
 // WriteConfig will write the config into file
 func (a *App) WriteConfig() {
-	a.loadDefaultConfig()
+	if a.AppDir == "" {
+		a.loadDefaultConfig()
+	}
 	configJSON, _ := json.MarshalIndent(a, "", "\t")
-	err := ioutil.WriteFile(ConfigFile, configJSON, 0600)
+	err := ioutil.WriteFile(a._AppConfigPath, configJSON, 0600)
 	if err != nil {
 		log.Fatalln("# Error: ERR_WRITE_CONFIG", err)
 	}
-	fmt.Println("done")
+	// fmt.Println("done")
 }
 
 func (a *App) loadDefaultConfig() {
 	fmt.Print("loading default config...")
 	a.AppDir = path.Join(utils.GetUserHomeDir(), "Downloads")
+	fmt.Println("done")
 }
 
 func (a *App) validateConfig() {
@@ -126,10 +140,12 @@ func (a *App) FindLatestApp() string {
 
 // CheckForUpdates will check for latest release
 func (a *App) CheckForUpdates() {
-	fmt.Print("#> Checking for updates...")
 	resp, err := http.Get(GithubLastestReleaseURL)
 	if err != nil {
-		log.Println("Unable to check for updates...", err)
+		fmt.Println()
+		log.Println("# Info: Unable to reach server for updates.")
+		fmt.Println()
+		return
 	}
 	defer resp.Body.Close()
 	var gitdata map[string]interface{}
@@ -137,14 +153,30 @@ func (a *App) CheckForUpdates() {
 	if err != nil {
 		fmt.Println()
 		log.Fatalln("# Error: ERR_CHKUPDATE_DECODE", err)
+		log.Fatalln("# Request: Please create an issue here for this error:", GithubIssuesURL)
 	}
 	for _, d := range gitdata["assets"].([]interface{}) {
 		durl := d.(map[string]interface{})["browser_download_url"].(string)
 		if strings.Contains(durl, runtime.GOOS) && !strings.Contains(durl, CurrentAppVersion) {
-			fmt.Println("New version of the app is available at", durl)
+			a.IsUpdateAvailable = true
+			a.UpdateURL = durl
+			a.ReleaseNotes = strings.Replace(strings.TrimSpace(gitdata["body"].(string)), "\n", "\n\t", -1)
+			a.WriteConfig()
+			return
 		} else if strings.Contains(durl, runtime.GOOS) {
-			fmt.Println("Your app is up to date")
+			fmt.Println()
+			// fmt.Println("Your app is up to date 👍")
+			return
 		}
+	}
+}
+
+// PrintUpdateInfo will print the update info
+func (a *App) PrintUpdateInfo() {
+	if a.IsUpdateAvailable {
+		fmt.Println("#> New version of the app is available at:", a.UpdateURL)
+		fmt.Println("#> Release Notes:")
+		fmt.Printf("\t%s\n\n", a.ReleaseNotes)
 	}
 }
 
@@ -178,7 +210,7 @@ func (a *App) Install() {
 func (a *App) Uninstall() {
 	fmt.Println("#> Uninstalling run-flogo-app...")
 	fmt.Print("...Deleting config file...")
-	err := os.Remove(ConfigFile)
+	err := os.Remove(a._AppConfigPath)
 	if err != nil {
 		fmt.Println("failed")
 		log.Println("# Error: ERR_UNINSTALL_CLRCONFIG", err)
@@ -210,7 +242,8 @@ func (a *App) Version() {
 
 // Main runs the core functions
 func (a *App) Main() {
-	a.CheckForUpdates()
+	go a.CheckForUpdates()
 	a.ReadConfig()
+	a.PrintUpdateInfo()
 	a.validateConfig()
 }

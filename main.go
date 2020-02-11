@@ -1,3 +1,12 @@
+// Copyright (c) 2019 abhijit wakchaure. All rights reserved.
+// Use of this source code is governed by a MIT-style license
+// that can be found in the LICENSE file.
+
+/*
+run-flogo-app
+	This program will run the latest TIBCO Flogo Enterprise app in the directory specified by you.
+	By default it will pickup the latest Flogo app from your Downloads directory.
+*/
 package main
 
 import (
