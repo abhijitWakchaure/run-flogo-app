@@ -6,6 +6,16 @@ Simple, sheer laziness on my part, but this will also save few precious seconds 
 ### How to Download
 You can download the release from here https://github.com/abhijitWakchaure/run-flogo-app/releases/latest
 
+### How to Install (Linux)
+First make the binary executable by running the following command:
+```
+chmod +x ~/Downloads/run-flogo-app-linux-amd64
+``` 
+Then install the program with `-install` flag
+```
+./run-flogo-app-linux-amd64 -install
+```
+
 ### How to Use
 Make sure the binary you downloaded is executable, then you can directly run it as executable
 ```
@@ -36,11 +46,14 @@ You can provide the following flags to the main program like this
 
 
 ### The config file
-When the program starts it creates a config file with name `run-flogo-app-config.json` in the same directory. It is a simple json file which looks like this:
+When the program starts it creates a config file with name `run-flogo-app.config` in your home directory. It is a simple json file which looks like this:
 ```
 {
-	"rfAppDir": "/home/abhijit/Downloads",
-	"rfAppPattern": "^.+-linux_amd64.*$"
+	"appsDir": "/home/abhijit/Downloads",
+	"appPattern": "^.+-linux_amd64.*$",
+	"isUpdateAvailable": false,
+	"updateURL": "",
+	"releaseNotes": ""
 }
 ```
-You can override the programs behavior by changing this file. 
+You can override the programs behavior by changing `appsDir` and `appPattern` variables in this file. 
