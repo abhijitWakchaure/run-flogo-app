@@ -39,7 +39,7 @@ const (
 	InstallPathWindows       = `C:\Windows\system32`
 )
 
-// App holds the environmet variables for the user
+// App holds the environment variables for the user
 type App struct {
 	_TempAppName      string
 	_InstallPath      string
