@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	"os/user"
 	"runtime"
+	"strconv"
+	"strings"
 )
 
 // Copy ...
@@ -74,11 +76,38 @@ func MakeAppExecutable(app string) {
 }
 
 // HandleYNInput handles the Yes/No input
-func HandleYNInput() rune {
+func HandleYNInput() bool {
 	reader := bufio.NewReader(os.Stdin)
-	char, _, err := reader.ReadRune()
+	inputBytes, _, err := reader.ReadLine()
 	if err != nil {
 		log.Fatalln("# Error: ERR_READ_USRIN", err)
 	}
-	return char
+	input := string(inputBytes)
+	if strings.EqualFold(input, "y") || strings.EqualFold(input, "yes") {
+		return true
+	}
+	if strings.EqualFold(input, "n") || strings.EqualFold(input, "no") {
+		return false
+	}
+	choice, err := strconv.ParseBool(input)
+	if err != nil {
+		log.Fatalln("# Error: ERR_PARSE_BOOL", err)
+	}
+	return choice
+}
+
+// RunFlogoApp will run the app
+func RunFlogoApp(app string, debug bool, args []string) {
+	cmd := exec.Command(app, args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	fmt.Printf("\n#> Executing: %s\n\n", strings.Join(cmd.Args, " "))
+	if debug {
+		cmd = EnableDebugLogs(cmd)
+	}
+	err := cmd.Run()
+	if err != nil {
+		log.Fatalln("# Error: ERR_RUN_FA", err)
+	}
 }

@@ -25,15 +25,15 @@ import (
 // Constants for local env
 const (
 	AppName                  = "run-flogo-app"
+	ConfigFileName           = ".run-flogo-app"
 	DefaultAppPatternLinux   = `^.+-linux_amd64.*$`
 	DefaultAppPatternWindows = `^.+-windows_amd64.*$`
 	DefaultAppPatternDarwin  = `^.+-darwin_amd64.*$`
-	ConfigFile               = "run-flogo-app.config"
 	GithubLastestReleaseURL  = "https://api.github.com/repos/abhijitWakchaure/run-flogo-app/releases/latest"
 	GithubDownloadBaseURL    = "https://github.com/abhijitWakchaure/run-flogo-app/releases/download/"
 	GithubBaseURL            = "https://github.com/abhijitWakchaure/run-flogo-app"
 	GithubIssuesURL          = "https://github.com/abhijitWakchaure/run-flogo-app/issues"
-	CurrentAppVersion        = "v1.5"
+	CurrentAppVersion        = "v2.0.0"
 	InstallPathLinux         = "/usr/local/bin"
 	InstallPathDarwin        = "/usr/local/bin"
 	InstallPathWindows       = `C:\Windows\system32`
@@ -43,7 +43,6 @@ const (
 type App struct {
 	_TempAppName      string
 	_InstallPath      string
-	_AppConfigPath    string
 	AppDir            string `json:"appsDir" binding:"required"`
 	AppPattern        string `json:"appPattern"`
 	IsUpdateAvailable bool   `json:"isUpdateAvailable"`
@@ -51,76 +50,94 @@ type App struct {
 	ReleaseNotes      string `json:"releaseNotes"`
 }
 
+// NewApp ...
+func NewApp(AppDir, AppPattern string) *App {
+	app := new(App)
+	app.AppDir = AppDir
+	app.AppPattern = AppPattern
+	app.Init()
+	go app.checkForUpdates()
+	app.printUpdateInfo()
+	app.validateConfig()
+	return app
+}
+
 // Init ...
 func (a *App) Init() {
-	if runtime.GOOS == "linux" {
+	var appPattern string
+	switch runtime.GOOS {
+	case "linux":
 		a._TempAppName = AppName + "-linux-amd64"
-		a.AppPattern = DefaultAppPatternLinux
+		appPattern = DefaultAppPatternLinux
 		a._InstallPath = InstallPathLinux
-	} else if runtime.GOOS == "windows" {
+	case "windows":
 		a._TempAppName = AppName + "-windows-amd64.exe"
-		a.AppPattern = DefaultAppPatternWindows
+		appPattern = DefaultAppPatternWindows
 		a._InstallPath = InstallPathWindows
-	} else if runtime.GOOS == "darwin" {
+	case "darwin":
 		a._TempAppName = AppName + "-darwin-amd64"
-		a.AppPattern = DefaultAppPatternDarwin
+		appPattern = DefaultAppPatternDarwin
 		a._InstallPath = InstallPathDarwin
+	default:
+		fmt.Printf("\nError: OS %s is not yet supported, please contact developers\n", runtime.GOOS)
 	}
-	a._AppConfigPath = path.Join(utils.GetUserHomeDir(), ConfigFile)
-}
-
-// ReadConfig will read the config from configuration file
-func (a *App) ReadConfig() {
-	fileExists, err := utils.CheckFileExists(a._AppConfigPath)
-	if err != nil {
-		log.Fatalln("# Error: ERR_READ_CONFIG", err)
-	}
-	if !fileExists {
-		fmt.Print("#> Creating config file...")
-		a.WriteConfig()
-		return
-	}
-	f, err := ioutil.ReadFile(a._AppConfigPath)
-	if err != nil {
-		fmt.Println("#> Unable to read config...ignoring config...using defaults")
-		a.loadDefaultConfig()
-		return
-	}
-	err = json.Unmarshal(f, &a)
-	if err != nil {
-		fmt.Print("#> Invalid config detected...rewriting config...")
-		a.WriteConfig()
+	if a.AppPattern == "" {
+		a.AppPattern = appPattern
 	}
 }
 
-// WriteConfig will write the config into file
-func (a *App) WriteConfig() {
+// RunLatestApp will run the latest app
+func (a *App) RunLatestApp(debug bool, args []string) {
+	latestFlogoApp := a.findLatestApp()
+	if len(latestFlogoApp) == 0 {
+		os.Exit(1)
+	}
+	fmt.Print("#> Do you want to execute this app \"", latestFlogoApp, "\" [Y/n]: ")
+	choice := utils.HandleYNInput()
+	if choice {
+		utils.MakeAppExecutable(latestFlogoApp)
+		utils.RunFlogoApp(latestFlogoApp, debug, args)
+	}
+}
+
+// PrintConfig prints the current config
+func (a *App) PrintConfig() {
+	config := struct {
+		AppDir     string `json:"appsDir"`
+		AppPattern string `json:"appPattern"`
+	}{
+		AppDir:     a.AppDir,
+		AppPattern: a.AppPattern,
+	}
+	b, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		fmt.Printf("\n#> Failed to read app config! error: %s\n", err.Error())
+		os.Exit(1)
+	}
+	fmt.Printf("\n#> Current app config:\n%s\n", string(b))
+}
+
+// writeConfig will write the config into file
+func (a *App) writeConfig() {
 	if a.AppDir == "" {
-		a.loadDefaultConfig()
+		a.AppDir = path.Join(utils.GetUserHomeDir(), "Downloads")
 	}
 	configJSON, _ := json.MarshalIndent(a, "", "\t")
-	err := ioutil.WriteFile(a._AppConfigPath, configJSON, 0600)
+	err := ioutil.WriteFile(path.Join(utils.GetUserHomeDir(), ConfigFileName), configJSON, 0644)
 	if err != nil {
 		log.Fatalln("# Error: ERR_WRITE_CONFIG", err)
 	}
-	// fmt.Println("done")
-}
-
-func (a *App) loadDefaultConfig() {
-	fmt.Print("loading default config...")
-	a.AppDir = path.Join(utils.GetUserHomeDir(), "Downloads")
-	fmt.Println("done")
 }
 
 func (a *App) validateConfig() {
 	if a.AppDir == "" {
 		fmt.Print("#> Invalid config detected...")
-		a.WriteConfig()
+		a.writeConfig()
 	}
 }
 
-// FindLatestApp will return the latest flogo app name
-func (a *App) FindLatestApp() string {
+// findLatestApp will return the latest flogo app name
+func (a *App) findLatestApp() string {
 	files, err := ioutil.ReadDir(a.AppDir)
 	if err != nil {
 		log.Fatal(err)
@@ -134,12 +151,12 @@ func (a *App) FindLatestApp() string {
 			return path.Join(a.AppDir, f.Name())
 		}
 	}
-	log.Println("#> Info: No flogo apps found in " + a.AppDir)
+	fmt.Println("#> No flogo apps found in " + a.AppDir)
 	return ""
 }
 
-// CheckForUpdates will check for latest release
-func (a *App) CheckForUpdates() {
+// checkForUpdates will check for latest release
+func (a *App) checkForUpdates() {
 	resp, err := http.Get(GithubLastestReleaseURL)
 	if err != nil {
 		fmt.Println()
@@ -155,24 +172,28 @@ func (a *App) CheckForUpdates() {
 		log.Fatalln("# Error: ERR_CHKUPDATE_DECODE", err)
 		log.Fatalln("# Request: Please create an issue here for this error:", GithubIssuesURL)
 	}
-	for _, d := range gitdata["assets"].([]interface{}) {
+	assets, ok := gitdata["assets"].([]interface{})
+	if !ok {
+		return
+	}
+	for _, d := range assets {
 		durl := d.(map[string]interface{})["browser_download_url"].(string)
 		if strings.Contains(durl, runtime.GOOS) && !strings.Contains(durl, CurrentAppVersion) {
 			a.IsUpdateAvailable = true
 			a.UpdateURL = durl
 			a.ReleaseNotes = strings.Replace(strings.TrimSpace(gitdata["body"].(string)), "\n", "\n\t", -1)
-			a.WriteConfig()
+			a.writeConfig()
 			return
 		} else if strings.Contains(durl, runtime.GOOS) {
-			fmt.Println()
+			// fmt.Println()
 			// fmt.Println("Your app is up to date 👍")
 			return
 		}
 	}
 }
 
-// PrintUpdateInfo will print the update info
-func (a *App) PrintUpdateInfo() {
+// printUpdateInfo will print the update info
+func (a *App) printUpdateInfo() {
 	if a.IsUpdateAvailable {
 		fmt.Println("#> New version of the app is available at:", a.UpdateURL)
 		fmt.Println("#> Release Notes:")
@@ -210,7 +231,7 @@ func (a *App) Install() {
 func (a *App) Uninstall() {
 	fmt.Println("#> Uninstalling run-flogo-app...")
 	fmt.Print("...Deleting config file...")
-	err := os.Remove(a._AppConfigPath)
+	err := os.Remove(path.Join(utils.GetUserHomeDir(), ConfigFileName))
 	if err != nil {
 		fmt.Println("failed")
 		log.Println("# Error: ERR_UNINSTALL_CLRCONFIG", err)
@@ -232,18 +253,53 @@ func (a *App) Uninstall() {
 	fmt.Println("#> Finished uninstalling run-flogo-app")
 }
 
+// Delete will delete all the flogo apps in apps dir
+func (a *App) Delete() {
+	fmt.Printf("#> Listing all the flogo app(s) inside [%s]...\n", a.AppDir)
+	files, err := ioutil.ReadDir(a.AppDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+	sort.SliceStable(files, func(i, j int) bool {
+		return files[i].ModTime().After(files[j].ModTime())
+	})
+	validApp := regexp.MustCompile(a.AppPattern)
+	var count int
+	apps := []string{}
+	for i, f := range files {
+		if !f.IsDir() && validApp.MatchString(f.Name()) {
+			apps = append(apps, path.Join(a.AppDir, f.Name()))
+			count++
+			fmt.Printf("%d. %s\n", i+1, path.Join(a.AppDir, f.Name()))
+		}
+	}
+	if count == 0 {
+		fmt.Println("#> No flogo app found inside apps dir.")
+		os.Exit(0)
+	}
+	fmt.Printf("\nAre you sure you want to delete all %d app(s)? [y/n] ", count)
+	choice := utils.HandleYNInput()
+	if choice {
+		fmt.Printf("\n#> Deleting %d app(s)...\n", count)
+		for _, f := range apps {
+			err = os.Remove(f)
+			if err != nil {
+				fmt.Printf("\n#> Failed to delete app [%s] error: %s", f, err.Error())
+			}
+		}
+		if err != nil {
+			os.Exit(1)
+		}
+		fmt.Printf("\n#> Finished deleting %d apps\n", count)
+		os.Exit(0)
+	}
+	fmt.Println("No app(s) were deleted!")
+}
+
 // Version ...
-func (a *App) Version() {
-	fmt.Println("## run-flogo-app")
+func Version() {
+	fmt.Println("#> Run FLOGO App")
 	fmt.Println("#> Version:", CurrentAppVersion)
 	fmt.Println("#> Developer: Abhijit Wakchaure")
 	fmt.Println("#> Github:", GithubBaseURL)
-}
-
-// Main runs the core functions
-func (a *App) Main() {
-	go a.CheckForUpdates()
-	a.ReadConfig()
-	a.PrintUpdateInfo()
-	a.validateConfig()
 }
