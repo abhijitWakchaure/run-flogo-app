@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 )
 
 // VERSION ...
@@ -29,17 +29,28 @@ func Print(appConfig *AppConfig) {
 
 // Write will write the config into file
 func Write(appConfig *AppConfig) {
-	userHome, err := os.UserHomeDir()
-	if err != nil {
-		fmt.Printf("\nE> Failed to get user home directory! Error: %s\n", err.Error())
-		os.Exit(1)
-	}
+	userHome := GetUserHomeDir()
 	if appConfig.AppsDir == "" {
-		appConfig.AppsDir = path.Join(userHome, "Downloads")
+		appConfig.AppsDir = filepath.Join(userHome, "Downloads")
 	}
 	configJSON, _ := json.MarshalIndent(appConfig, "", "\t")
-	err = ioutil.WriteFile(path.Join(userHome, ConfigFileName), configJSON, 0644)
+	err := ioutil.WriteFile(filepath.Join(userHome, ConfigFileName), configJSON, 0644)
 	if err != nil {
 		fmt.Printf("E> Error ERR_WRITE_CONFIG: %s\n", err.Error())
 	}
+}
+
+// GetUserHomeDir ...
+func GetUserHomeDir() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		pwd, err := os.Getwd()
+		if pwd == "" {
+			fmt.Printf("\nE> Failed to get PWD! Error %s\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("\nE> Could not get user home dir! Using PWD [%s] as home dir\n", pwd)
+		return pwd
+	}
+	return home
 }

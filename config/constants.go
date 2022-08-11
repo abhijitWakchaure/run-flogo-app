@@ -2,8 +2,9 @@ package config
 
 // Constants for app config
 const (
-	AppName        = "run-flogo-app"
-	ConfigFileName = ".run-flogo-app"
+	AppName         = "run-flogo-app"
+	ConfigFileName  = ".run-flogo-app"
+	MaxAppsWithList = 5
 
 	DefaultAppPatternLinux   = `^.+-linux_amd64.*$`
 	DefaultAppPatternWindows = `^.+-windows_amd64.*$`

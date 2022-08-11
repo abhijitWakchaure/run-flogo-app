@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -41,9 +40,9 @@ func Install(installPath string) {
 		os.Exit(1)
 	}
 	if runtime.GOOS == "windows" {
-		dst = installPath + string(os.PathSeparator) + config.AppName + ".exe"
+		dst = filepath.Join(installPath, config.AppName+".exe")
 	} else {
-		dst = path.Join(installPath, config.AppName)
+		dst = filepath.Join(installPath, config.AppName)
 	}
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
@@ -64,25 +63,21 @@ func Install(installPath string) {
 		os.Exit(1)
 	}
 	fmt.Println("done")
-	fmt.Println("#> You can now directly execute ", config.AppName)
+	fmt.Println("#> You can now directly execute", config.AppName)
 }
 
 // Uninstall will install the program
 func Uninstall(installPath string) {
 	fmt.Println("#> Uninstalling run-flogo-app...")
 	fmt.Printf("   Deleting config file...")
-	userHome, err := os.UserHomeDir()
-	if err != nil {
-		fmt.Printf("\nE> Failed to get user home directory! Error: %s\n", err.Error())
-		os.Exit(1)
-	}
-	os.Remove(path.Join(userHome, config.ConfigFileName))
+	userHome := config.GetUserHomeDir()
+	os.Remove(filepath.Join(userHome, config.ConfigFileName))
 	fmt.Printf("\n   Deleting main executable...")
 	var target string
 	if runtime.GOOS == "windows" {
 		target = installPath + string(os.PathSeparator) + config.AppName + ".exe"
 	} else {
-		target = path.Join(installPath, config.AppName)
+		target = filepath.Join(installPath, config.AppName)
 	}
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
@@ -96,10 +91,10 @@ func Uninstall(installPath string) {
 		fmt.Printf("\nError: OS %s is not yet supported, please contact developers\n", runtime.GOOS)
 		os.Exit(1)
 	}
-	err = cmd.Run()
+	err := cmd.Run()
 	if err != nil {
 		fmt.Println("failed")
-		fmt.Println("#> Unable to uninstall run-flogo-app! Error ERR_UNINSTALL_REMOVE...you can manually delete", path.Join(installPath, config.AppName))
+		fmt.Println("#> Unable to uninstall run-flogo-app! Error ERR_UNINSTALL_REMOVE...you can manually delete", filepath.Join(installPath, config.AppName))
 		os.Exit(1)
 	}
 	fmt.Printf("\n#> Finished uninstalling run-flogo-app")
@@ -168,4 +163,21 @@ func HandleYNInput() bool {
 		fmt.Printf("\nE> Error ERR_PARSE_BOOL: %s\n", err.Error())
 	}
 	return choice
+}
+
+// HandleNumericInput handles the numeric input
+func HandleNumericInput() int {
+	reader := bufio.NewReader(os.Stdin)
+	inputBytes, _, err := reader.ReadLine()
+	if err != nil {
+		fmt.Printf("\nE> Error ERR_READ_USRIN: %s\n", err.Error())
+		os.Exit(1)
+	}
+	input := string(inputBytes)
+	n, err := strconv.Atoi(input)
+	if err != nil {
+		fmt.Printf("\nE> Error ERR_PARSE_NUMBER: %s\n", err.Error())
+		os.Exit(1)
+	}
+	return n
 }
