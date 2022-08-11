@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/abhijitWakchaure/run-flogo-app/core"
+	"github.com/abhijitWakchaure/run-flogo-app/app"
+	"github.com/abhijitWakchaure/run-flogo-app/config"
+	"github.com/abhijitWakchaure/run-flogo-app/software"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-var app *core.App
+var a *app.App
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -19,7 +21,12 @@ var rootCmd = &cobra.Command{
 	Long:  `Run the most recent flogo app from your configured apps dir. If the apps dir is not configured, the default will be used`,
 	Run: func(cmd *cobra.Command, args []string) {
 		debug, _ := cmd.Flags().GetBool("debug")
-		app.RunLatestApp(debug, args)
+		go func() {
+			updateConfig := software.CheckForUpdates()
+			// TODO: write update config
+			_ = updateConfig
+		}()
+		a.RunLatestApp(debug, args)
 	},
 }
 
@@ -52,5 +59,18 @@ func initConfig() {
 	}
 	appsDir := viper.GetString("appsDir")
 	appPattern := viper.GetString("appPattern")
-	app = core.NewApp(appsDir, appPattern)
+	isUpdateAvailable := viper.GetBool("isUpdateAvailable")
+	updateURL := viper.GetString("updateURL")
+	releaseNotes := viper.GetString("releaseNotes")
+
+	appConfig := &config.AppConfig{
+		AppsDir:    appsDir,
+		AppPattern: appPattern,
+	}
+	updateConfig := &software.UpdateConfig{
+		IsUpdateAvailable: isUpdateAvailable,
+		UpdateURL:         updateURL,
+		ReleaseNotes:      releaseNotes,
+	}
+	a = app.NewApp(appConfig, updateConfig)
 }

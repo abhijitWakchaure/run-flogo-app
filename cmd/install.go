@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/abhijitWakchaure/run-flogo-app/software"
 	"github.com/spf13/cobra"
 )
 
@@ -9,7 +10,7 @@ var installCmd = &cobra.Command{
 	Use:   "install",
 	Short: "Install the program",
 	Run: func(cmd *cobra.Command, args []string) {
-		app.Install()
+		software.Install(a.InstallPath)
 	},
 }
 

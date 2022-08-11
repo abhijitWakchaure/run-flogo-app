@@ -9,11 +9,11 @@ You can download the release from here https://github.com/abhijitWakchaure/run-f
 ### How to Install (Linux)
 First make the binary executable by running the following command:
 ```
-chmod +x ~/Downloads/run-flogo-app-linux-amd64
+chmod +x ~/Downloads/run-flogo-app-linux_amd64
 ``` 
 Then install the program with `-install` flag
 ```
-~/Downloads/run-flogo-app-linux-amd64 -install
+~/Downloads/run-flogo-app-linux_amd64 -install
 ```
 
 ### How to Use
