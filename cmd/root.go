@@ -14,6 +14,8 @@ import (
 )
 
 var a *app.App
+
+// GENDOCS ...
 var GENDOCS bool
 
 // rootCmd represents the base command when called without any subcommands
@@ -45,8 +47,18 @@ var rootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if GENDOCS {
+		err := os.RemoveAll("./docs")
+		if err != nil {
+			fmt.Printf("E> Failed to remove old docs! Error: %s\n", err.Error())
+			os.Exit(1)
+		}
+		err = os.Mkdir("./docs", 0744)
+		if err != nil {
+			fmt.Printf("E> Failed to create docs dir! Error: %s\n", err.Error())
+			os.Exit(1)
+		}
 		fmt.Println("i> Generating docs...")
-		err := doc.GenMarkdownTree(rootCmd, "./docs")
+		err = doc.GenMarkdownTree(rootCmd, "./docs")
 		if err != nil {
 			fmt.Printf("E> Failed to generate markdown docs! Error: %s\n", err.Error())
 			os.Exit(1)
@@ -54,6 +66,16 @@ func Execute() {
 		header := &doc.GenManHeader{
 			Title:   config.AppName,
 			Section: "3",
+		}
+		err = os.RemoveAll("./manpages")
+		if err != nil {
+			fmt.Printf("E> Failed to remove old manpages! Error: %s\n", err.Error())
+			os.Exit(1)
+		}
+		err = os.Mkdir("./manpages", 0744)
+		if err != nil {
+			fmt.Printf("E> Failed to create manpages dir! Error: %s\n", err.Error())
+			os.Exit(1)
 		}
 		err = doc.GenManTree(rootCmd, header, "./manpages")
 		if err != nil {
