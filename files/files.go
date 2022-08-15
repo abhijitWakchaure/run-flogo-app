@@ -2,26 +2,23 @@ package files
 
 import (
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 
+	"github.com/abhijitWakchaure/run-flogo-app/config"
 	"github.com/abhijitWakchaure/run-flogo-app/software"
 )
 
 // FindLatestApp will return the latest flogo app name
 func FindLatestApp(dir, pattern string) string {
-	files, err := ioutil.ReadDir(dir)
-	if err != nil {
-		fmt.Printf("\n#> Failed to read apps dir [%s]! Error %s\n", dir, err.Error())
-		os.Exit(1)
-	}
-	sort.SliceStable(files, func(i, j int) bool {
-		return files[i].ModTime().After(files[j].ModTime())
-	})
+	fmt.Printf("#> Finding latest app inside apps dir [%s]...\n", dir)
+	files := listAndSort(dir)
 	validApp := regexp.MustCompile(pattern)
 	for _, f := range files {
 		if !f.IsDir() && validApp.MatchString(f.Name()) {
@@ -34,17 +31,10 @@ func FindLatestApp(dir, pattern string) string {
 
 // FindAppsWithName will return the list of matching flogo apps
 func FindAppsWithName(dir, pattern, name string) []string {
-	fmt.Printf("#> Searching apps with name containing [%s]...\n", name)
+	fmt.Printf("#> Searching apps with name containing '%s' inside apps dir [%s]...\n", name, dir)
 	var apps []string
 	name = strings.ToLower(name)
-	files, err := ioutil.ReadDir(dir)
-	if err != nil {
-		fmt.Printf("\n#> Failed to read apps dir [%s]! Error %s\n", dir, err.Error())
-		os.Exit(1)
-	}
-	sort.SliceStable(files, func(i, j int) bool {
-		return files[i].ModTime().After(files[j].ModTime())
-	})
+	files := listAndSort(dir)
 	validApp := regexp.MustCompile(pattern)
 	for _, f := range files {
 		if !f.IsDir() && validApp.MatchString(f.Name()) && strings.Contains(strings.ToLower(f.Name()), name) {
@@ -56,14 +46,8 @@ func FindAppsWithName(dir, pattern, name string) []string {
 
 // ListLastNApps will return the list of last 'N' flogo apps
 func ListLastNApps(dir, pattern string, n int) []string {
-	files, err := ioutil.ReadDir(dir)
-	if err != nil {
-		fmt.Printf("\n#> Failed to read apps dir [%s]! Error %s\n", dir, err.Error())
-		os.Exit(1)
-	}
-	sort.SliceStable(files, func(i, j int) bool {
-		return files[i].ModTime().After(files[j].ModTime())
-	})
+	fmt.Printf("#> Listing last %d apps inside apps dir [%s]...\n", n, dir)
+	files := listAndSort(dir)
 	var apps []string
 	validApp := regexp.MustCompile(pattern)
 	for _, f := range files {
@@ -79,15 +63,8 @@ func ListLastNApps(dir, pattern string, n int) []string {
 
 // DeleteApps will delete all the flogo apps in apps dir
 func DeleteApps(dir, pattern string) {
-	fmt.Printf("#> Listing all the flogo app(s) inside [%s]...\n", dir)
-	files, err := ioutil.ReadDir(dir)
-	if err != nil {
-		fmt.Printf("\n#> Failed to read apps dir [%s]! Error %s\n", dir, err.Error())
-		os.Exit(1)
-	}
-	sort.SliceStable(files, func(i, j int) bool {
-		return files[i].ModTime().After(files[j].ModTime())
-	})
+	fmt.Printf("#> Listing all the flogo apps inside apps dir [%s]...\n", dir)
+	files := listAndSort(dir)
 	validApp := regexp.MustCompile(pattern)
 	var count int
 	apps := []string{}
@@ -104,6 +81,7 @@ func DeleteApps(dir, pattern string) {
 	}
 	fmt.Printf("\nAre you sure you want to delete all %d app(s)? [y/n] ", count)
 	choice := software.HandleYNInput()
+	var err error
 	if choice {
 		fmt.Printf("\n#> Deleting %d app(s)...\n", count)
 		for _, f := range apps {
@@ -119,4 +97,23 @@ func DeleteApps(dir, pattern string) {
 		os.Exit(0)
 	}
 	fmt.Println("No app(s) were deleted!")
+}
+
+func listAndSort(dir string) []fs.FileInfo {
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		fmt.Printf("\n#> Failed to read apps dir [%s]! Error %s\n", dir, err.Error())
+		os.Exit(1)
+	}
+	sort.SliceStable(files, func(i, j int) bool {
+		return files[i].ModTime().After(files[j].ModTime())
+	})
+	var nFiles []fs.FileInfo
+	selfName := fmt.Sprintf("%s-%s_%s", config.AppName, runtime.GOOS, runtime.GOARCH)
+	for _, f := range files {
+		if !strings.Contains(f.Name(), selfName) {
+			nFiles = append(nFiles, f)
+		}
+	}
+	return nFiles
 }
