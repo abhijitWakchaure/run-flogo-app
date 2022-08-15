@@ -20,3 +20,11 @@ echo "### Building for platform: windows/amd64"
 GOOS=windows GOARCH=amd64 go build ${DOC_TAG} -ldflags "${LDFLAGS}" -o dist/${APP_NAME}-windows_amd64.exe
 echo "### Building for platform: darwin/amd64"
 GOOS=darwin GOARCH=amd64 go build ${DOC_TAG} -ldflags "${LDFLAGS}" -o dist/${APP_NAME}-darwin_amd64
+
+
+echo "### Building for platform: linux/arm64"
+GOOS=linux GOARCH=arm64 go build ${DOC_TAG} -ldflags "${LDFLAGS}" -o dist/${APP_NAME}-linux_arm64
+echo "### Building for platform: windows/arm64"
+GOOS=windows GOARCH=arm64 go build ${DOC_TAG} -ldflags "${LDFLAGS}" -o dist/${APP_NAME}-windows_arm64.exe
+echo "### Building for platform: darwin/arm"
+GOOS=darwin GOARCH=arm64 go build ${DOC_TAG} -ldflags "${LDFLAGS}" -o dist/${APP_NAME}-darwin_arm64
