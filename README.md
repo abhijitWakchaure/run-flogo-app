@@ -24,10 +24,10 @@ First make the binary executable by running the following command:
 chmod +x ~/Downloads/run-flogo-app-linux_amd64
 ```
 
-Then install the program with `-install` flag
+Then install the program with `install` command
 
 ```bash
-$ ~/Downloads/run-flogo-app-linux_amd64 -install
+$ ~/Downloads/run-flogo-app-linux_amd64 install
 #> Installing run-flogo-app...done
 #> You can now directly execute run-flogo-app
 ```
