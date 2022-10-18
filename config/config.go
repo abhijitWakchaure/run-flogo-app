@@ -9,7 +9,7 @@ import (
 )
 
 // VERSION ...
-var VERSION string
+var VERSION = "undefined"
 
 // AppConfig ...
 type AppConfig struct {
