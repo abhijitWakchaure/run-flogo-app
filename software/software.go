@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/abhijitWakchaure/run-flogo-app/config"
+	"github.com/spf13/viper"
 )
 
 // UpdateConfig ...
@@ -104,6 +105,7 @@ func Uninstall(installPath string) {
 func CheckForUpdates() *UpdateConfig {
 	resp, err := http.Get(config.GithubLastestReleaseURL)
 	if err != nil {
+		fmt.Printf("\n\nE> run-flogo-app Error: ERR_CHKUPDATE_HTTPGET %s\n", err)
 		return nil
 	}
 	defer resp.Body.Close()
@@ -118,27 +120,39 @@ func CheckForUpdates() *UpdateConfig {
 		fmt.Printf("\nE> run-flogo-app Error: ERR_CHKUPDATE_DECODE %s\n", err)
 		return nil
 	}
+	OSAndArch := fmt.Sprintf("%s_%s", runtime.GOOS, runtime.GOARCH)
 	for _, d := range assets {
 		durl := d.(map[string]interface{})["browser_download_url"].(string)
-		if strings.Contains(durl, runtime.GOOS) && !strings.Contains(durl, config.VERSION) {
-			return &UpdateConfig{
-				IsUpdateAvailable: true,
-				UpdateURL:         durl,
-				ReleaseNotes:      strings.Replace(strings.TrimSpace(gitdata["body"].(string)), "\n", "\n\t", -1),
-			}
-		} else if strings.Contains(durl, runtime.GOOS) {
+		if !strings.Contains(durl, OSAndArch) {
+			continue
+		}
+		if strings.Contains(durl, config.VERSION) {
 			// fmt.Println()
 			// fmt.Println("Your app is up to date 👍")
 			return nil
 		}
+		return &UpdateConfig{
+			IsUpdateAvailable: true,
+			UpdateURL:         durl,
+			ReleaseNotes:      strings.Replace(strings.TrimSpace(gitdata["body"].(string)), "\n", "\n\t", -1),
+		}
+
 	}
 	return nil
+}
+
+// WriteUpdateConfig will write the update info
+func WriteUpdateConfig(updateConfig *UpdateConfig) {
+	viper.Set("isUpdateAvailable", updateConfig.IsUpdateAvailable)
+	viper.Set("updateURL", updateConfig.UpdateURL)
+	viper.Set("releaseNotes", updateConfig.ReleaseNotes)
+	viper.WriteConfig()
 }
 
 // PrintUpdateInfo will print the update info
 func PrintUpdateInfo(updateConfig *UpdateConfig) {
 	if updateConfig.IsUpdateAvailable {
-		fmt.Println("#> New version of the app is available at:", updateConfig.UpdateURL)
+		fmt.Println("#> New version of the app is available!")
 		fmt.Println("#> Release Notes:")
 		fmt.Printf("\t%s\n\n", updateConfig.ReleaseNotes)
 	}

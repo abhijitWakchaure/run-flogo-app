@@ -30,8 +30,7 @@ var rootCmd = &cobra.Command{
 		name, _ := cmd.Flags().GetString("name")
 		go func() {
 			updateConfig := software.CheckForUpdates()
-			// TODO: write update config
-			_ = updateConfig
+			software.WriteUpdateConfig(updateConfig)
 		}()
 		logLevel := config.LogLevelInfo
 		if trace {
@@ -115,6 +114,7 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Printf("i> Using config file: %s\n", viper.ConfigFileUsed())
 	}
+
 	appsDir := viper.GetString("appsDir")
 	appPattern := viper.GetString("appPattern")
 	isUpdateAvailable := viper.GetBool("isUpdateAvailable")

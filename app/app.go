@@ -11,6 +11,7 @@ import (
 	"github.com/abhijitWakchaure/run-flogo-app/config"
 	"github.com/abhijitWakchaure/run-flogo-app/files"
 	"github.com/abhijitWakchaure/run-flogo-app/software"
+	"github.com/spf13/viper"
 )
 
 // App holds the environment variables for the user
@@ -46,6 +47,7 @@ func NewApp(appConfig *config.AppConfig, updateConfig *software.UpdateConfig) *A
 	if a.AppsDir == "" {
 		a.AppsDir = filepath.Join(config.GetUserHomeDir(), "Downloads")
 	}
+	WriteAppConfig(a.AppConfig)
 	software.PrintUpdateInfo(a.UpdateConfig)
 	return a
 }
@@ -57,6 +59,13 @@ func (a *App) PrintConfig() {
 		AppPattern: a.AppPattern,
 	}
 	config.Print(c)
+}
+
+// WriteAppConfig will write the app config
+func WriteAppConfig(appConfig *config.AppConfig) {
+	viper.Set("appsDir", appConfig.AppsDir)
+	viper.Set("appPattern", appConfig.AppPattern)
+	viper.WriteConfig()
 }
 
 // RunLatestApp will run the latest app
