@@ -14,7 +14,7 @@ Simple, sheer laziness on my part, but this will also save few precious seconds 
 
 ### How to Download
 
-You can download the release from here https://github.com/abhijitWakchaure/run-flogo-app/releases/latest
+You can download the release from [latest releases](https://github.com/abhijitWakchaure/run-flogo-app/releases/latest)
 
 ### How to Install (Linux)
 
@@ -91,6 +91,7 @@ run-flogo-app [flags]
   -h, --help          help for run-flogo-app
   -l, --list          List last 5 apps and choose a number to run
   -n, --name string   Run app with given (partial) name
+  -t, --trace         Enable trace logs
 ```
 
 #### SEE ALSO
@@ -99,6 +100,7 @@ run-flogo-app [flags]
 * [run-flogo-app delete](docs/run-flogo-app_delete.md) - Delete all the flogo apps in apps dir
 * [run-flogo-app install](docs/run-flogo-app_install.md) - Install the program
 * [run-flogo-app uninstall](docs/run-flogo-app_uninstall.md) - Uninstall the program
+* [run-flogo-app update](docs/run-flogo-app_update.md) - Update the app with latest version
 * [run-flogo-app version](docs/run-flogo-app_version.md) - Print the version info of the program
 
 ## Config file
