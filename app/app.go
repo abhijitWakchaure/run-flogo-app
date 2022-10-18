@@ -60,7 +60,7 @@ func (a *App) PrintConfig() {
 }
 
 // RunLatestApp will run the latest app
-func (a *App) RunLatestApp(debug bool, args []string) {
+func (a *App) RunLatestApp(logLevel string, args []string) {
 	latestFlogoApp := files.FindLatestApp(a.AppsDir, a.AppPattern)
 	if len(latestFlogoApp) == 0 {
 		os.Exit(1)
@@ -70,12 +70,12 @@ func (a *App) RunLatestApp(debug bool, args []string) {
 	if !choice {
 		os.Exit(0)
 	}
-	runExecutable(latestFlogoApp, debug, args)
+	runExecutable(latestFlogoApp, logLevel, args)
 }
 
 // RunNamedApp will run the app with given (partial) name
 // If there are multiple matches, it will ask for user to choose
-func (a *App) RunNamedApp(name string, debug bool, args []string) {
+func (a *App) RunNamedApp(name, logLevel bool, args []string) {
 	flogoApps := files.FindAppsWithName(a.AppsDir, a.AppPattern, name)
 	if len(flogoApps) == 0 {
 		fmt.Printf("\n#> No flogo apps found containing name [%s] in apps dir [%s]\n", name, a.AppsDir)
@@ -88,7 +88,7 @@ func (a *App) RunNamedApp(name string, debug bool, args []string) {
 		if !choice {
 			os.Exit(0)
 		}
-		runExecutable(flogoApp, debug, args)
+		runExecutable(flogoApp, logLevel, args)
 	}
 	fmt.Printf("#> Got %d matches for query [%s]:\n", len(flogoApps), name)
 	for i, v := range flogoApps {
@@ -101,11 +101,11 @@ func (a *App) RunNamedApp(name string, debug bool, args []string) {
 		os.Exit(1)
 	}
 	flogoApp := flogoApps[choice-1]
-	runExecutable(flogoApp, debug, args)
+	runExecutable(flogoApp, logLevel, args)
 }
 
 // RunWithList will list the last 5 apps and will ask user to select 1
-func (a *App) RunWithList(debug bool, args []string) {
+func (a *App) RunWithList(logLevel string, args []string) {
 	flogoApps := files.ListLastNApps(a.AppsDir, a.AppPattern, config.MaxAppsWithList)
 	if len(flogoApps) == 0 {
 		fmt.Printf("\n#> No flogo apps found in apps dir [%s]\n", a.AppsDir)
@@ -118,7 +118,7 @@ func (a *App) RunWithList(debug bool, args []string) {
 		if !choice {
 			os.Exit(0)
 		}
-		runExecutable(flogoApp, debug, args)
+		runExecutable(flogoApp, logLevel, args)
 	}
 	fmt.Printf("#> Here is the list of apps:\n")
 	for i, v := range flogoApps {
@@ -131,7 +131,7 @@ func (a *App) RunWithList(debug bool, args []string) {
 		os.Exit(1)
 	}
 	flogoApp := flogoApps[choice-1]
-	runExecutable(flogoApp, debug, args)
+	runExecutable(flogoApp, logLevel, args)
 }
 
 // PrintVersion ...
@@ -142,7 +142,7 @@ func PrintVersion() {
 	fmt.Println("#> Github:", config.GithubBaseURL)
 }
 
-func runExecutable(path string, debug bool, args []string) {
+func runExecutable(path, logLevel string, args []string) {
 	fmt.Println("\n#> Making app executable...")
 	err := os.Chmod(path, 0700)
 	if err != nil {
@@ -154,9 +154,9 @@ func runExecutable(path string, debug bool, args []string) {
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 	fmt.Printf("#> Executing: %s\n\n", strings.Join(cmd.Args, " "))
-	if debug {
-		debugFlag := `FLOGO_LOG_LEVEL=DEBUG`
-		cmd.Env = append(os.Environ(), debugFlag)
+	if logLevel != "" {
+		logLevelEnv := fmt.Sprintf("FLOGO_LOG_LEVEL=%s", logLevel)
+		cmd.Env = append(os.Environ(), logLevelEnv)
 	}
 	err = cmd.Run()
 	if err != nil {

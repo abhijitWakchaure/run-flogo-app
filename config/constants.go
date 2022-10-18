@@ -18,4 +18,8 @@ const (
 	InstallPathLinux   = "/usr/local/bin"
 	InstallPathDarwin  = "/usr/local/bin"
 	InstallPathWindows = `C:\Windows\system32`
+
+	LogLevelInfo  = "INFO"
+	LogLevelDebug = "DEBUG"
+	LogLevelTrace = "TRACE"
 )
