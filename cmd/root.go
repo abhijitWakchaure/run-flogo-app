@@ -25,6 +25,7 @@ var rootCmd = &cobra.Command{
 	Long:  `Run the most recent flogo app from your configured apps dir. If the apps dir is not configured, the default will be used`,
 	Run: func(cmd *cobra.Command, args []string) {
 		debug, _ := cmd.Flags().GetBool("debug")
+		trace, _ := cmd.Flags().GetBool("trace")
 		list, _ := cmd.Flags().GetBool("list")
 		name, _ := cmd.Flags().GetString("name")
 		go func() {
@@ -32,13 +33,19 @@ var rootCmd = &cobra.Command{
 			// TODO: write update config
 			_ = updateConfig
 		}()
+		logLevel := config.LogLevelInfo
+		if trace {
+			logLevel = config.LogLevelTrace
+		} else if debug {
+			logLevel = config.LogLevelDebug
+		}
 		if list {
-			a.RunWithList(debug, args)
+			a.RunWithList(logLevel, args)
 		}
 		if name != "" {
-			a.RunNamedApp(name, debug, args)
+			a.RunNamedApp(name, logLevel, args)
 		}
-		a.RunLatestApp(debug, args)
+		a.RunLatestApp(logLevel, args)
 	},
 	DisableAutoGenTag: true,
 }
@@ -92,6 +99,7 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.Flags().BoolP("debug", "d", false, "Enable debug logs")
+	rootCmd.Flags().BoolP("trace", "t", false, "Enable trace logs")
 	rootCmd.Flags().StringP("name", "n", "", "Run app with given (partial) name")
 	rootCmd.Flags().BoolP("list", "l", false, "List last 5 apps and choose a number to run")
 }
