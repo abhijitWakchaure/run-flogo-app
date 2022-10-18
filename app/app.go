@@ -75,7 +75,7 @@ func (a *App) RunLatestApp(logLevel string, args []string) {
 
 // RunNamedApp will run the app with given (partial) name
 // If there are multiple matches, it will ask for user to choose
-func (a *App) RunNamedApp(name, logLevel bool, args []string) {
+func (a *App) RunNamedApp(name, logLevel string, args []string) {
 	flogoApps := files.FindAppsWithName(a.AppsDir, a.AppPattern, name)
 	if len(flogoApps) == 0 {
 		fmt.Printf("\n#> No flogo apps found containing name [%s] in apps dir [%s]\n", name, a.AppsDir)
