@@ -17,6 +17,7 @@ run-flogo-app [flags]
   -h, --help          help for run-flogo-app
   -l, --list          List last 5 apps and choose a number to run
   -n, --name string   Run app with given (partial) name
+  -t, --trace         Enable trace logs
 ```
 
 ### SEE ALSO
@@ -25,5 +26,6 @@ run-flogo-app [flags]
 * [run-flogo-app delete](run-flogo-app_delete.md)	 - Delete all the flogo apps in apps dir
 * [run-flogo-app install](run-flogo-app_install.md)	 - Install the program
 * [run-flogo-app uninstall](run-flogo-app_uninstall.md)	 - Uninstall the program
+* [run-flogo-app update](run-flogo-app_update.md)	 - Update the app with latest version
 * [run-flogo-app version](run-flogo-app_version.md)	 - Print the version info of the program
 

@@ -8,6 +8,6 @@ import (
 )
 
 func init() {
-	fmt.Println("Initializing docs...")
+	fmt.Println("#> Initializing docs...")
 	GENDOCS = true
 }

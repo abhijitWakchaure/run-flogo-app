@@ -10,7 +10,7 @@ var installCmd = &cobra.Command{
 	Use:   "install",
 	Short: "Install the program",
 	Run: func(cmd *cobra.Command, args []string) {
-		software.Install(a.InstallPath)
+		software.Install("")
 	},
 }
 

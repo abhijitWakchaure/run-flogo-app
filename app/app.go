@@ -48,7 +48,6 @@ func NewApp(appConfig *config.AppConfig, updateConfig *software.UpdateConfig) *A
 		a.AppsDir = filepath.Join(config.GetUserHomeDir(), "Downloads")
 	}
 	WriteAppConfig(a.AppConfig)
-	software.PrintUpdateInfo(a.UpdateConfig)
 	return a
 }
 
@@ -141,6 +140,11 @@ func (a *App) RunWithList(logLevel string, args []string) {
 	}
 	flogoApp := flogoApps[choice-1]
 	runExecutable(flogoApp, logLevel, args)
+}
+
+// Update will update the app to latest version released on Github
+func (a *App) Update() {
+	software.Update(a.AppConfig)
 }
 
 // PrintVersion ...
