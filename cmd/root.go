@@ -28,9 +28,12 @@ var rootCmd = &cobra.Command{
 		trace, _ := cmd.Flags().GetBool("trace")
 		list, _ := cmd.Flags().GetBool("list")
 		name, _ := cmd.Flags().GetString("name")
+		software.PrintUpdateInfo(a.UpdateConfig)
 		go func() {
-			updateConfig := software.CheckForUpdates()
-			software.WriteUpdateConfig(updateConfig)
+			updateConfig, err := software.CheckForUpdates()
+			if err == nil {
+				software.WriteUpdateConfig(updateConfig)
+			}
 		}()
 		logLevel := config.LogLevelInfo
 		if trace {
@@ -112,7 +115,7 @@ func initConfig() {
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err == nil {
-		fmt.Printf("i> Using config file: %s\n", viper.ConfigFileUsed())
+		fmt.Printf("i> Using config file at: %s\n\n", viper.ConfigFileUsed())
 	}
 
 	appsDir := viper.GetString("appsDir")

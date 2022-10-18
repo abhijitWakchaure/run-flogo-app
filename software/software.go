@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -24,37 +25,42 @@ type UpdateConfig struct {
 }
 
 // Install will install the program
-func Install(installPath string) {
+func Install(src string) {
 	fmt.Print("#> Installing run-flogo-app...")
-	ex, err := os.Executable()
+	if src == "" {
+		ex, err := os.Executable()
+		if err != nil {
+			fmt.Println("failed")
+			fmt.Printf("\n# Error: ERR_INSTALL_SELFPATH %s\n", err.Error())
+			os.Exit(1)
+		}
+		src, err = filepath.EvalSymlinks(ex)
+		if err != nil {
+			fmt.Println("failed")
+			fmt.Printf("\n# Error: ERR_INSTALL_EVALSYMLNK %s\n", err.Error())
+			os.Exit(1)
+		}
+	}
+	err := os.Chmod(src, 0777)
 	if err != nil {
 		fmt.Println("failed")
-		fmt.Printf("\n# Error: ERR_INSTALL_SELFPATH %s\n", err.Error())
+		fmt.Printf("\n# Error: ERR_INSTALL_MAKEEXECUTABLE %s\n", err.Error())
 		os.Exit(1)
 	}
-	var src string
 	var dst string
-	src, err = filepath.EvalSymlinks(ex)
-	if err != nil {
-		fmt.Println("failed")
-		fmt.Printf("\n# Error: ERR_INSTALL_EVALSYMLNK %s\n", err.Error())
-		os.Exit(1)
-	}
-	if runtime.GOOS == "windows" {
-		dst = filepath.Join(installPath, config.AppName+".exe")
-	} else {
-		dst = filepath.Join(installPath, config.AppName)
-	}
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "linux":
+		dst = filepath.Join(config.InstallPathLinux, config.AppName)
 		cmd = exec.Command("sudo", "cp", "-fpv", src, dst)
 	case "windows":
+		dst = filepath.Join(config.InstallPathWindows, config.AppName+".exe")
 		cmd = exec.Command("cmd.exe", "/C", `copy /Y `+src+" "+dst)
 	case "darwin":
+		dst = filepath.Join(config.InstallPathDarwin, config.AppName)
 		cmd = exec.Command("sudo", "cp", "-fpv", src, dst)
 	default:
-		fmt.Printf("\nError: OS %s is not yet supported, please contact developers\n", runtime.GOOS)
+		fmt.Printf("\nError: OS %s is not yet supported, please contact developer(s) to add support\n", runtime.GOOS)
 		os.Exit(1)
 	}
 	err = cmd.Run()
@@ -65,6 +71,7 @@ func Install(installPath string) {
 	}
 	fmt.Println("done")
 	fmt.Println("#> You can now directly execute", config.AppName)
+	WriteUpdateConfig(nil)
 }
 
 // Uninstall will install the program
@@ -101,24 +108,52 @@ func Uninstall(installPath string) {
 	fmt.Printf("\n#> Finished uninstalling run-flogo-app")
 }
 
+// Update will update the app
+func Update(appConfig *config.AppConfig) {
+	updateConfig, err := CheckForUpdates()
+	if err != nil {
+		fmt.Printf("\nFailed to check for updates due to:\n%s", err.Error())
+		os.Exit(1)
+	}
+	if updateConfig == nil || len(updateConfig.UpdateURL) <= 2 {
+		fmt.Println("Your app is up to date 👍")
+		WriteUpdateConfig(nil)
+		os.Exit(0)
+	}
+	WriteUpdateConfig(updateConfig)
+	binaryName := filepath.Base(updateConfig.UpdateURL)
+	downloadPath := filepath.Join(appConfig.AppsDir, binaryName)
+	fmt.Printf("Downloading latest version from: %s\n\n", updateConfig.UpdateURL)
+	err = DownloadFile(downloadPath, updateConfig.UpdateURL)
+	if err != nil {
+		fmt.Printf("\nFailed to download updated app due to:\n%s", err.Error())
+		os.Exit(1)
+	}
+	Install(downloadPath)
+}
+
 // CheckForUpdates will check for latest release
-func CheckForUpdates() *UpdateConfig {
+func CheckForUpdates() (*UpdateConfig, error) {
 	resp, err := http.Get(config.GithubLastestReleaseURL)
 	if err != nil {
-		fmt.Printf("\n\nE> run-flogo-app Error: ERR_CHKUPDATE_HTTPGET %s\n", err)
-		return nil
+		err = fmt.Errorf("E> run-flogo-app Error: ERR_CHKUPDATE_HTTPGET %s", err)
+		fmt.Printf("\n\n%s\n", err)
+		return nil, err
 	}
 	defer resp.Body.Close()
 	var gitdata map[string]interface{}
 	err = json.NewDecoder(resp.Body).Decode(&gitdata)
 	if err != nil {
-		fmt.Printf("\n\nE> run-flogo-app Error: ERR_CHKUPDATE_DECODE %s\n", err)
+		err = fmt.Errorf("E> run-flogo-app Error: ERR_CHKUPDATE_DECODE %s", err)
+		fmt.Printf("\n\n%s\n", err)
 		fmt.Printf("\nPlease create an issue here for this error: %s\n\n", config.GithubIssuesURL)
+		return nil, err
 	}
 	assets, ok := gitdata["assets"].([]interface{})
 	if !ok {
-		fmt.Printf("\nE> run-flogo-app Error: ERR_CHKUPDATE_DECODE %s\n", err)
-		return nil
+		err = fmt.Errorf("E> run-flogo-app Error: ERR_CHKUPDATE_NOASSETS %s", err)
+		fmt.Printf("\n\n%s\n", err)
+		return nil, err
 	}
 	OSAndArch := fmt.Sprintf("%s_%s", runtime.GOOS, runtime.GOARCH)
 	for _, d := range assets {
@@ -129,20 +164,28 @@ func CheckForUpdates() *UpdateConfig {
 		if strings.Contains(durl, config.VERSION) {
 			// fmt.Println()
 			// fmt.Println("Your app is up to date 👍")
-			return nil
+			WriteUpdateConfig(nil)
+			return nil, nil
 		}
 		return &UpdateConfig{
 			IsUpdateAvailable: true,
 			UpdateURL:         durl,
 			ReleaseNotes:      strings.Replace(strings.TrimSpace(gitdata["body"].(string)), "\n", "\n\t", -1),
-		}
+		}, nil
 
 	}
-	return nil
+	return nil, nil
 }
 
 // WriteUpdateConfig will write the update info
 func WriteUpdateConfig(updateConfig *UpdateConfig) {
+	if updateConfig == nil {
+		updateConfig = &UpdateConfig{
+			IsUpdateAvailable: false,
+			UpdateURL:         "",
+			ReleaseNotes:      "",
+		}
+	}
 	viper.Set("isUpdateAvailable", updateConfig.IsUpdateAvailable)
 	viper.Set("updateURL", updateConfig.UpdateURL)
 	viper.Set("releaseNotes", updateConfig.ReleaseNotes)
@@ -151,6 +194,9 @@ func WriteUpdateConfig(updateConfig *UpdateConfig) {
 
 // PrintUpdateInfo will print the update info
 func PrintUpdateInfo(updateConfig *UpdateConfig) {
+	if updateConfig == nil {
+		return
+	}
 	if updateConfig.IsUpdateAvailable {
 		fmt.Println("#> New version of the app is available!")
 		fmt.Println("#> Release Notes:")
@@ -194,4 +240,27 @@ func HandleNumericInput() int {
 		os.Exit(1)
 	}
 	return n
+}
+
+// DownloadFile will download the file specified by the URL and store it at the
+// location specified
+func DownloadFile(filepath string, url string) (err error) {
+	out, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("bad status: %s", resp.Status)
+	}
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		return err
+	}
+	return nil
 }
