@@ -166,10 +166,11 @@ func runExecutable(path, logLevel string, args []string) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
+	cmd.Env = os.Environ()
 	fmt.Printf("#> Executing: %s\n\n", strings.Join(cmd.Args, " "))
 	if logLevel != "" {
 		logLevelEnv := fmt.Sprintf("FLOGO_LOG_LEVEL=%s", logLevel)
-		cmd.Env = append(os.Environ(), logLevelEnv)
+		cmd.Env = append(cmd.Env, logLevelEnv)
 	}
 	err = cmd.Run()
 	if err != nil {
