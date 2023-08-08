@@ -168,7 +168,7 @@ func runExecutable(path, logLevel string, args []string) {
 	cmd.Stdin = os.Stdin
 	cmd.Env = os.Environ()
 	fmt.Printf("#> Executing: %s\n\n", strings.Join(cmd.Args, " "))
-	if logLevel != "" {
+	if logLevel != config.LogLevelInfo {
 		logLevelEnv := fmt.Sprintf("FLOGO_LOG_LEVEL=%s", logLevel)
 		cmd.Env = append(cmd.Env, logLevelEnv)
 	}
